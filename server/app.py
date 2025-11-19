@@ -14,6 +14,7 @@ from flask import (
 from werkzeug.security import check_password_hash
 
 from database import DB_PATH, get_connection
+from flag_cipher import decrypt_flag, hash_flag
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-me")
@@ -24,6 +25,7 @@ FLAG_BASE_POINTS = {
     "SQLI_BLIND": 140,
     "XSS": 90,
     "CSRF": 90,
+    "STEG": 50,
 }
 POINT_DECAY = 15
 MIN_POINTS = 20
@@ -75,6 +77,42 @@ def current_admin():
         return None
     cursor = g.db.execute("SELECT * FROM admins WHERE id = ?", (session["admin_id"],))
     return cursor.fetchone()
+
+
+def _decrypt_row_values(rows):
+    """
+    Decrypt any encrypted flag values in query result rows.
+    This allows SQLi UNION SELECT results to show plaintext flags.
+    Tries to decrypt all string values - if decryption fails, keeps original value.
+    """
+    if not rows:
+        return rows
+    decrypted_rows = []
+    for row in rows:
+        # Convert Row to dict if needed
+        if hasattr(row, 'keys'):
+            row_dict = {key: row[key] for key in row.keys()}
+        else:
+            row_dict = dict(row)
+        
+        decrypted_row = {}
+        for key, value in row_dict.items():
+            if value and isinstance(value, str):
+                # Try to decrypt - if it fails, it's not an encrypted flag
+                try:
+                    decrypted = decrypt_flag(value)
+                    # If decryption succeeded (not corrupted and different from original), use decrypted value
+                    if decrypted and decrypted != "[corrupted-flag]" and decrypted != value:
+                        decrypted_row[key] = decrypted
+                    else:
+                        decrypted_row[key] = value
+                except Exception:
+                    # If decryption fails for any reason, keep original value
+                    decrypted_row[key] = value
+            else:
+                decrypted_row[key] = value
+        decrypted_rows.append(decrypted_row)
+    return decrypted_rows
 
 
 @app.route("/")
@@ -162,6 +200,8 @@ def sqli_lab():
         )
         try:
             rows = g.db.execute(raw_query).fetchall()
+            # Decrypt any encrypted flags in the results
+            rows = _decrypt_row_values(rows)
         except Exception as exc:  # noqa: BLE001 intentional for lab
             error = str(exc)
     return render_template(
@@ -189,6 +229,8 @@ def sqli_contracts():
         )
         try:
             rows = g.db.execute(raw_query).fetchall()
+            # Decrypt any encrypted flags in the results
+            rows = _decrypt_row_values(rows)
         except Exception as exc:  # noqa: BLE001
             error = str(exc)
     return render_template(
@@ -219,9 +261,10 @@ def sqli_blind():
         except Exception:  # noqa: BLE001
             verdict = "ACCESS DENIED"
         if verdict == "ACCESS GRANTED":
-            success_flag = g.db.execute(
+            encrypted_flag = g.db.execute(
                 "SELECT code FROM flags WHERE category = 'SQLI_BLIND'"
             ).fetchone()["code"]
+            success_flag = decrypt_flag(encrypted_flag)
     return render_template(
         "sqli_blind.html",
         student=student,
@@ -258,7 +301,8 @@ def xss_lab():
         ORDER BY feedback.created_at DESC
         """
     ).fetchall()
-    xss_flag = g.db.execute("SELECT code FROM flags WHERE category = 'XSS'").fetchone()["code"]
+    encrypted_xss_flag = g.db.execute("SELECT code FROM flags WHERE category = 'XSS'").fetchone()["code"]
+    xss_flag = decrypt_flag(encrypted_xss_flag)
     return render_template(
         "xss.html",
         student=student,
@@ -271,7 +315,8 @@ def xss_lab():
 @login_required
 def csrf_lab():
     student = current_student()
-    csrf_flag = g.db.execute("SELECT code FROM flags WHERE category = 'CSRF'").fetchone()["code"]
+    encrypted_csrf_flag = g.db.execute("SELECT code FROM flags WHERE category = 'CSRF'").fetchone()["code"]
+    csrf_flag = decrypt_flag(encrypted_csrf_flag)
     return render_template("csrf.html", student=student, csrf_flag=csrf_flag)
 
 
@@ -313,6 +358,12 @@ def flag_station():
     return render_template("flags.html", student=student, challenges=challenge_rows)
 
 
+@app.route("/bonus")
+@login_required
+def bonus():
+    return render_template("bonus.html")
+
+
 @app.route("/flags/submit", methods=["POST"])
 @login_required
 def submit_flag():
@@ -325,13 +376,14 @@ def submit_flag():
         return redirect(url_for("flag_station"))
 
     flag = g.db.execute(
-        "SELECT id, code, category FROM flags WHERE category = ?", (category,)
+        "SELECT id, code, code_hash, category FROM flags WHERE category = ?", (category,)
     ).fetchone()
     if not flag:
         flash("Unknown challenge category.", "danger")
         return redirect(url_for("flag_station"))
 
-    if submitted_flag != flag["code"]:
+    submitted_hash = hash_flag(submitted_flag)
+    if submitted_hash != flag["code_hash"]:
         flash("Incorrect flag. Keep digging!", "danger")
         return redirect(url_for("flag_station"))
 

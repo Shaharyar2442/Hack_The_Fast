@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Bonus Challenge{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h1 class="h4 fw-semibold mb-3">Bonus: Steganography Drop</h1>
+        <p class="text-muted small">
+          Download <strong>Bomb.png</strong>, extract the hidden message, and submit the recovered
+          flag under the <code>STEG</code> category on the flag station. Any technique works:
+          metadata inspection, strings, exiftool, or your favorite steg utility.
+        </p>
+        <a class="btn btn-outline-primary" href="{{ url_for('static', filename='img/Bomb.png') }}" download>Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

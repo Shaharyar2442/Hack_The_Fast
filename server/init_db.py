@@ -6,14 +6,12 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash
 
 from database import DB_PATH, get_connection
+from flag_cipher import encrypt_flag, hash_flag
 
-FLAGS = [
-    ("SQLI", "FLAG{query_the_matrix}", "Extract the hidden data via SQL injection"),
-    ("SQLI_ADV", "FLAG{stacked_union_operatives}", "Chain UNION SELECT payloads against confidential contracts"),
-    ("SQLI_BLIND", "FLAG{boolean_oracle}", "Use boolean/blind techniques to exfiltrate secret data"),
-    ("XSS", "FLAG{stored_script_success}", "Pop an alert and steal the flag with stored XSS"),
-    ("CSRF", "FLAG{cross_site_rewrite}", "Forge a state-changing request to grab this flag"),
-]
+try:
+    from flag_payloads import PLAINTEXT_FLAGS
+except ImportError:
+    PLAINTEXT_FLAGS = []
 
 LEADERBOARD_PLAYERS = [
     ("BTL23001", "Ada Lovelace", 1200),
@@ -62,6 +60,7 @@ def bootstrap_schema(conn):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 category TEXT UNIQUE NOT NULL,
                 code TEXT NOT NULL,
+                code_hash TEXT NOT NULL,
                 description TEXT
             );
 
@@ -116,18 +115,29 @@ def bootstrap_schema(conn):
         )
 
 
+def ensure_flag_hash_column(conn):
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(flags)")}
+    if "code_hash" not in columns:
+        conn.execute("ALTER TABLE flags ADD COLUMN code_hash TEXT DEFAULT ''")
+
+
 def seed_flags(conn):
+    ensure_flag_hash_column(conn)
+    if not PLAINTEXT_FLAGS:
+        print("No plaintext flags found (flag_payloads missing). Skipping flag seeding.")
+        return
     with conn:
-        for category, code, description in FLAGS:
+        for category, code, description in PLAINTEXT_FLAGS:
             conn.execute(
                 """
-                INSERT INTO flags (category, code, description)
-                VALUES (?, ?, ?)
+                INSERT INTO flags (category, code, code_hash, description)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(category) DO UPDATE SET
                     code=excluded.code,
+                    code_hash=excluded.code_hash,
                     description=excluded.description
                 """,
-                (category, code, description),
+                (category, encrypt_flag(code), hash_flag(code), description),
             )
 
 
