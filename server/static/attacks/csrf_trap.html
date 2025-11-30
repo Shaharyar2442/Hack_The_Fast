@@ -29,9 +29,9 @@
   </form>
 
   <script>
-    document.body.addEventListener("click", () => {
+    window.onload = function() {
       document.getElementById("csrfForm").submit();
-    });
+    };
   </script>
 </body>
 </html>
