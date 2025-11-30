@@ -6,13 +6,15 @@
     <div class="card border-0 shadow-sm">
       <div class="card-body">
         <h1 class="h4 fw-semibold mb-3">Profile Settings (No CSRF tokens anywhere)</h1>
-        <p class="text-muted small">Any website on the internet can forge a POST request to this form because it trusts cookies blindly.</p>
+        <p class="text-muted small">Any website on the internet can forge a POST request to this form because it trusts
+          cookies blindly.</p>
         <form method="POST" action="{{ url_for('update_email') }}">
           <label class="form-label">Email address</label>
           <input class="form-control" type="email" name="email" value="{{ student.email }}" required>
           <button class="btn btn-danger mt-3">Save changes</button>
         </form>
-        <p class="small text-muted mt-3">Open <code>static/attacks/csrf_trap.html</code> in another tab to see an exploit template that auto-submits this form.</p>
+        <p class="small text-muted mt-3">Open <code>static/attacks/csrf_trap.html</code> in another tab to see an
+          exploit template that auto-submits this form.</p>
       </div>
     </div>
   </div>
@@ -20,7 +22,8 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <h2 class="h5 fw-semibold">Objective</h2>
-        <p>Convince the victim to visit a malicious page that sends a POST request to update their email. The script reveals the flag when the forged request runs.</p>
+        <p>Convince the victim to visit a malicious page that sends a POST request to update their email. The script
+          reveals the flag when the forged request runs.</p>
         <div class="alert alert-info small mt-3">
           <strong>💡 Hints:</strong>
           <ul class="mb-0 mt-2">
@@ -29,6 +32,11 @@
             <li>use Console after clicking on reditrection page</li>
           </ul>
         </div>
+
+        <div class="alert alert-success mt-3">
+          <strong>Flag Captured:</strong> <code>FLAG{Hello_from_the_other_side}</code>
+        </div>
+
         <div class="alert alert-warning small mt-2">
           Successful CSRF requests set a secret header accessible via <code>window.challengeFlags.csrf</code>.
         </div>
@@ -45,4 +53,3 @@
   window.challengeFlags.csrf = csrfFlagRaw ? decodeURIComponent(csrfFlagRaw) : null;
 </script>
 {% endblock %}
-
