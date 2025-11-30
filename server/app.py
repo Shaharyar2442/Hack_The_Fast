@@ -179,8 +179,7 @@ def logout():
 @login_required
 def dashboard():
     student = current_student()
-    # All flags are now in isolated tables, not in flags table
-    # Define all challenges manually (same as flag_station)
+    
     all_challenges = [
         ("SQLI", "Extract the hidden data via SQL injection"),
         ("SQLI_ADV", "Chain UNION SELECT payloads against confidential contracts"),
@@ -238,8 +237,7 @@ def sqli_lab():
     raw_query = None
     error = None
     if term:
-        # VULNERABLE: Direct string concatenation - SQLI_BASIC flag is in player_secrets table
-        # Flag column: secret_token (encrypted), reward_points is dummy data
+       
         raw_query = (
             "SELECT roll_no, display_name, points FROM leaderboard "
             f"WHERE display_name LIKE '%{term}%' ORDER BY points DESC"
@@ -299,8 +297,7 @@ def sqli_blind():
     verdict = None
     success_flag = None
     if guess:
-        # VULNERABLE: Direct string concatenation - SQLI_BLIND flag is in access_keys table
-        # Flag column: auth_token (encrypted), status_code is dummy data
+        
         raw_query = (
             "SELECT CASE WHEN EXISTS ("
             f"SELECT 1 FROM access_keys WHERE auth_token = '{guess}'"
